@@ -25,4 +25,13 @@ pub mod amm {
         ctx.accounts
             .create_liquidity_pool(amount_a, amount_b, ctx.bumps.liquidity_pool)
     }
+
+    pub fn deposit_liquidity(
+        ctx: Context<DepositLiquidity>,
+        pool_id: u64,
+        amount_a: u64,
+        amount_b: u64,
+    ) -> Result<()> {
+        ctx.accounts.deposit_liquidity(pool_id, amount_a, amount_b)
+    }
 }

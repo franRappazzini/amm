@@ -33,7 +33,66 @@ pub fn initial_mint_liquidity(amount_a: u64, amount_b: u64) -> Result<u64> {
     Ok(liquidity)
 }
 
-// qM = min { (Cx / A) * M , (Cy / B) * M  }
+/// Calculates the liquidity tokens to mint for subsequent deposits to an existing liquidity pool.
+///
+/// This function handles three cases of liquidity deposits based on the proportion of tokens deposited:
+///
+/// # Cases
+///
+/// Let `C` = amount of token to deposit, `M` = current LP token supply, `A` = reserve of token X, `B` = reserve of token Y
+///
+/// ## 1. Equal Proportions
+/// When `Cy / Cx = B / A`, the deposit matches the pool's ratio perfectly.
+///
+/// The liquidity provider receives:
+/// ```text
+/// qM = (Cx / A) * M = (Cy / B) * M
+/// ```
+///
+/// ## 2. Excess Token
+/// When `Cy / Cx > B / A`, there's an excess of token Y.
+/// ```text
+/// Cy > (B * Cx) / A
+/// Δy = Cy - (B * Cx) / A  (excess that will be returned)
+/// ```
+///
+/// The liquidity provider receives `Δy` back and gets LP tokens:
+/// ```text
+/// qM = (Cx / A) * M = ((Cy - Δy) / B) * M < (Cy / B) * M
+/// ```
+///
+/// ## 3. Insufficient Token
+/// When `Cy / Cx < B / A`, there's insufficient token Y relative to token X.
+/// ```text
+/// (A * Cy) / B < Cx
+/// Δx = Cx - (A * Cy) / B  (excess that will be returned)
+/// ```
+///
+/// The liquidity provider receives `Δx` back and gets LP tokens:
+/// ```text
+/// qM = (Cy / B) * M = ((Cx - Δx) / A) * M < (Cx / A) * M
+/// ```
+///
+/// # Summary Formula
+/// In all cases, the liquidity provider receives:
+/// ```text
+/// qM = min { (Cx / A) * M , (Cy / B) * M }
+/// ```
+///
+/// # Parameters
+/// * `amount_a` - Amount of token A to deposit (Cx)
+/// * `amount_b` - Amount of token B to deposit (Cy)
+/// * `supply` - Current total supply of LP tokens (M)
+/// * `reserve_a` - Current reserve of token A in the pool (A)
+/// * `reserve_b` - Current reserve of token B in the pool (B)
+///
+/// # Returns
+/// The amount of liquidity tokens to mint for the liquidity provider.
+///
+/// # Errors
+/// * `AmmError::MathOverflow` - If multiplication overflows u128 or result exceeds u64
+/// * `AmmError::MathUnderflow` - If division would result in underflow
+/// * `AmmError::InsufficientLiquidityMinted` - If calculated liquidity is zero
 pub fn subsequent_mint_liquidity(
     amount_a: u64,
     amount_b: u64,

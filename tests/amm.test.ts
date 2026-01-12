@@ -7,7 +7,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
-import { bn, initialMintLiquidity } from "./utils/functions";
+import { bn, initialMintLiquidity, subsequentMintLiquidity } from "./utils/functions";
 import { getGlobalConfigAccount, getLiquidityPoolAccount } from "./utils/accounts";
 
 import { Amm } from "../target/types/amm";
@@ -24,9 +24,10 @@ describe("amm", () => {
 
   const program = anchor.workspace.amm as Program<Amm>;
 
+  const liquidityProvider = anchor.web3.Keypair.generate();
+
   let mintA: PublicKey;
   let mintB: PublicKey;
-  const liquidityProvider = anchor.web3.Keypair.generate();
 
   before(async () => {
     await connection.requestAirdrop(liquidityProvider.publicKey, LAMPORTS_PER_SOL);
@@ -83,10 +84,11 @@ describe("amm", () => {
 
     expect(globalConfig.authority).eq(wallet.publicKey.toBase58());
     expect(globalConfig.feeBps).eq(FEE_BPS);
+    
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for 1 seconds to avoid tx failure
   });
 
   it("`create_liquidity_pool` method!", async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for 1 seconds to avoid tx failure
 
     const AMOUNT_A = 10_000_000; // 10 tokens
     const AMOUNT_B = 20_000_000; // 20 tokens
@@ -131,5 +133,38 @@ describe("amm", () => {
     expect(liquidityPool.amountMintA).eq(AMOUNT_A);
     expect(liquidityPool.amountMintB).eq(AMOUNT_B);
     expect(liquidityPool.lpSupply).eq(liquidity);
+  });
+
+  it("`deposit_liquidity` method!", async () => {
+    const poolId = 0;
+    const AMOUNT_A = 5_000_000; // 5 tokens
+    const AMOUNT_B = 10_000_000; // 10 tokens
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    const tx = await program.methods
+      .depositLiquidity(bn(poolId), bn(AMOUNT_A), bn(AMOUNT_B))
+      .accounts({
+        provider: liquidityProvider.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([liquidityProvider])
+      .rpc();
+
+    console.log("`deposit_liquidity` tx signature:", tx);
+
+    const liquidity = subsequentMintLiquidity(
+      AMOUNT_A,
+      AMOUNT_B,
+      prevLiquidityPool.lpSupply,
+      prevLiquidityPool.amountMintA,
+      prevLiquidityPool.amountMintB
+    );
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + AMOUNT_A);
+    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + AMOUNT_B);
+    expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
   });
 });
