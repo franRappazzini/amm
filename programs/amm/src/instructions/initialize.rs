@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::states::GlobalConfig;
+use crate::{constants::GLOBAL_CONFIG_SEED, states::GlobalConfig};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -11,7 +11,7 @@ pub struct Initialize<'info> {
         init,
         payer = authority,
         space = GlobalConfig::SIZE,
-        seeds = [GlobalConfig::SEED],
+        seeds = [GLOBAL_CONFIG_SEED],
         bump,
     )]
     pub global_config: Account<'info, GlobalConfig>,
@@ -25,6 +25,7 @@ impl<'info> Initialize<'info> {
             authority: self.authority.key(),
             bump,
             fee_bps,
+            pool_count: 0,
         });
 
         Ok(())

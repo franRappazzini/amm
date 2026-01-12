@@ -8,9 +8,9 @@ pub struct GlobalConfig {
     pub authority: Pubkey,
     pub bump: u8,
     pub fee_bps: u16,
+    pub pool_count: u64,
 }
 
 impl GlobalConfig {
     pub const SIZE: usize = DISCRIMINATOR_SIZE + GlobalConfig::INIT_SPACE;
-    pub const SEED: &[u8] = b"global_config";
 }

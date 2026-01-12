@@ -1,11 +1,13 @@
 mod constants;
+mod errors;
 mod instructions;
 mod states;
+mod utils;
 
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("BiHu64Uy1VhgeehWxymVCvbLM4bqMMRYkkXn3ExUBfu7");
+declare_id!("92NnZLZ8TS5Ay1UwAnQmtbYWbAFcEWtZcn7MwVkLhhMZ");
 
 #[program]
 pub mod amm {
@@ -13,5 +15,14 @@ pub mod amm {
 
     pub fn initialize(ctx: Context<Initialize>, fee_bps: u16) -> Result<()> {
         ctx.accounts.initialize(fee_bps, ctx.bumps.global_config)
+    }
+
+    pub fn create_liquidity_pool(
+        ctx: Context<CreateLiquidityPool>,
+        amount_a: u64,
+        amount_b: u64,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_liquidity_pool(amount_a, amount_b, ctx.bumps.liquidity_pool)
     }
 }
