@@ -22,3 +22,28 @@ export function subsequentMintLiquidity(
 
   return Math.min(liquidityA, liquidityB);
 }
+
+export function calculateDepositExcess(
+  amountA: number,
+  amountB: number,
+  reserveA: number,
+  reserveB: number
+): { newAmountA: number; newAmountB: number } {
+  const deposited = Math.floor(amountB / amountA);
+  const reserves = Math.floor(reserveB / reserveA);
+
+  let newAmountA = amountA;
+  let newAmountB = amountB;
+
+  if (deposited > reserves) {
+    const res = Math.floor((reserveB * amountA) / reserveA);
+    const excessB = amountB - res;
+    newAmountB = amountB - excessB;
+  } else if (deposited < reserves) {
+    const res = Math.floor((reserveA * amountB) / reserveB);
+    const excessA = amountA - res;
+    newAmountA = amountA - excessA;
+  }
+
+  return { newAmountA, newAmountB };
+}

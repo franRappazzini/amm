@@ -76,13 +76,33 @@ pub struct DepositLiquidity<'info> {
 
 impl<'info> DepositLiquidity<'info> {
     pub fn deposit_liquidity(&mut self, pool_id: u64, amount_a: u64, amount_b: u64) -> Result<()> {
+        // calculate possible excess
+        let (new_amount_a, new_amount_b) = utils::math::calculate_deposit_excess(
+            amount_a,
+            amount_b,
+            self.liquidity_pool.amount_mint_a,
+            self.liquidity_pool.amount_mint_b,
+        )?;
+
+        msg!(
+            "Current pool reserves: {} of A and {} of B",
+            self.liquidity_pool.amount_mint_a,
+            self.liquidity_pool.amount_mint_b
+        );
+
+        msg!(
+            "Depositing amounts: {} of A and {} of B",
+            new_amount_a,
+            new_amount_b
+        );
+
         // transfer tokens to vaults
         utils::token::transfer_spl(
             &self.provider,
             &self.provider_a_ata,
             &self.mint_a_vault,
             &self.mint_a,
-            amount_a,
+            new_amount_a,
             &self.token_program,
         )?;
 
@@ -91,7 +111,7 @@ impl<'info> DepositLiquidity<'info> {
             &self.provider_b_ata,
             &self.mint_b_vault,
             &self.mint_b,
-            amount_b,
+            new_amount_b,
             &self.token_program,
         )?;
 
@@ -123,13 +143,13 @@ impl<'info> DepositLiquidity<'info> {
         self.liquidity_pool.amount_mint_a = self
             .liquidity_pool
             .amount_mint_a
-            .checked_add(amount_a)
+            .checked_add(new_amount_a)
             .ok_or(AmmError::MathOverflow)?;
 
         self.liquidity_pool.amount_mint_b = self
             .liquidity_pool
             .amount_mint_b
-            .checked_add(amount_b)
+            .checked_add(new_amount_b)
             .ok_or(AmmError::MathOverflow)?;
 
         self.liquidity_pool.lp_supply = self
