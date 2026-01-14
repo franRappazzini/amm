@@ -20,4 +20,6 @@ pub enum AmmError {
     ExcessiveInputAmount,
     #[msg("Excessive output amount")]
     ExcessiveOutputAmount,
+    #[msg("Insufficient reserve in the liquidity pool")]
+    InsufficientReserve,
 }

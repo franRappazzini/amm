@@ -296,6 +296,11 @@ pub fn calculate_swap_amounts(
     reserve_output: u64,
     fee_bps: u16,
 ) -> Result<(u64, u64)> {
+    require!(
+        reserve_input > 0 && reserve_output > 0,
+        AmmError::InsufficientReserve
+    );
+
     let fee_multiplier = 10_000u128
         .checked_sub(fee_bps as u128)
         .ok_or(AmmError::MathUnderflow)?;
