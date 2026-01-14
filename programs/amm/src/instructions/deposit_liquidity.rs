@@ -147,24 +147,8 @@ impl<'info> DepositLiquidity<'info> {
         )?;
 
         // update liquidity pool state
-        self.liquidity_pool.amount_mint_a = self
-            .liquidity_pool
-            .amount_mint_a
-            .checked_add(new_amount_a)
-            .ok_or(AmmError::MathOverflow)?;
-
-        self.liquidity_pool.amount_mint_b = self
-            .liquidity_pool
-            .amount_mint_b
-            .checked_add(new_amount_b)
-            .ok_or(AmmError::MathOverflow)?;
-
-        self.liquidity_pool.lp_supply = self
-            .liquidity_pool
-            .lp_supply
-            .checked_add(liquidity)
-            .ok_or(AmmError::MathOverflow)?;
-
-        Ok(())
+        self.liquidity_pool.add_liquidity_a(new_amount_a)?;
+        self.liquidity_pool.add_liquidity_b(new_amount_b)?;
+        self.liquidity_pool.add_liquidity_lp(liquidity)
     }
 }

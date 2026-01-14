@@ -111,11 +111,7 @@ impl<'info> RedeemLp<'info> {
                 Some(signer_seeds),
             )?;
 
-            self.liquidity_pool.amount_mint_a = self
-                .liquidity_pool
-                .amount_mint_a
-                .checked_sub(claimable_amount_a)
-                .ok_or(AmmError::MathUnderflow)?;
+            self.liquidity_pool.remove_liquidity_a(claimable_amount_a)?;
         }
 
         if claimable_amount_b > 0 {
@@ -129,20 +125,10 @@ impl<'info> RedeemLp<'info> {
                 Some(signer_seeds),
             )?;
 
-            self.liquidity_pool.amount_mint_b = self
-                .liquidity_pool
-                .amount_mint_b
-                .checked_sub(claimable_amount_b)
-                .ok_or(AmmError::MathUnderflow)?;
+            self.liquidity_pool.remove_liquidity_b(claimable_amount_b)?;
         }
 
         // update liquidity pool state
-        self.liquidity_pool.lp_supply = self
-            .liquidity_pool
-            .lp_supply
-            .checked_sub(lp_amount)
-            .ok_or(AmmError::MathUnderflow)?;
-
-        Ok(())
+        self.liquidity_pool.remove_liquidity_lp(lp_amount)
     }
 }

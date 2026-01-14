@@ -38,4 +38,8 @@ pub mod amm {
     pub fn redeem_lp(ctx: Context<RedeemLp>, pool_id: u64, lp_amount: u64) -> Result<()> {
         ctx.accounts.redeem_lp(pool_id, lp_amount)
     }
+
+    pub fn swap(ctx: Context<Swap>, pool_id: u64, params: SwapParams) -> Result<()> {
+        ctx.accounts.swap(pool_id, params)
+    }
 }

@@ -11,6 +11,7 @@ import {
   bn,
   calculateClaimableAmount,
   calculateDepositExcess,
+  calculateSwapAmounts,
   initialMintLiquidity,
   subsequentMintLiquidity,
 } from "./utils/functions";
@@ -32,12 +33,14 @@ describe("amm", () => {
 
   const liquidityProvider = anchor.web3.Keypair.generate();
   let lpBalance = 0;
+  const user = anchor.web3.Keypair.generate();
 
   let mintA: PublicKey;
   let mintB: PublicKey;
 
   before(async () => {
     await connection.requestAirdrop(liquidityProvider.publicKey, LAMPORTS_PER_SOL);
+    await connection.requestAirdrop(user.publicKey, LAMPORTS_PER_SOL);
 
     // tokens mint creation
     mintA = await createMint(connection, wallet.payer, wallet.publicKey, null, 6);
@@ -61,6 +64,20 @@ describe("amm", () => {
       liquidityProvider.publicKey
     );
 
+    const userAtaA = await getOrCreateAssociatedTokenAccount(
+      connection,
+      user,
+      mintA,
+      user.publicKey
+    );
+
+    // const userAtaB = await getOrCreateAssociatedTokenAccount(
+    //   connection,
+    //   user,
+    //   mintB,
+    //   user.publicKey
+    // );
+
     // mint tokens to atas
     await mintTo(
       connection,
@@ -68,8 +85,8 @@ describe("amm", () => {
       mintA,
       liqProvAtaA.address,
       wallet.publicKey,
-      1_000_000_000
-    ); // 1,000 tokens
+      1_000_000_000_000
+    ); // 1,000,000 tokens
 
     await mintTo(
       connection,
@@ -77,8 +94,26 @@ describe("amm", () => {
       mintB,
       liqProvAtaB.address,
       wallet.publicKey,
-      2_000_000_000
-    ); // 2,000 tokens
+      2_000_000_000_000
+    ); // 2,000,000 tokens
+
+    await mintTo(
+      connection,
+      wallet.payer,
+      mintA,
+      userAtaA.address,
+      wallet.publicKey,
+      1_000_000_000
+    ); // 1,000 tokens
+
+    // await mintTo(
+    //   connection,
+    //   wallet.payer,
+    //   mintB,
+    //   userAtaB.address,
+    //   wallet.publicKey,
+    //   2_000_000_000
+    // ); // 2,000 tokens
   });
 
   it("`initialize` method!", async () => {
@@ -146,8 +181,8 @@ describe("amm", () => {
 
   it("`deposit_liquidity` method!", async () => {
     const poolId = 0;
-    const AMOUNT_A = 5_000_000; // 5 tokens
-    const AMOUNT_B = 10_000_000; // 10 tokens
+    const AMOUNT_A = 500_000_000; // 500 tokens
+    const AMOUNT_B = 1_000_000_000; // 1000 tokens
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
 
@@ -182,8 +217,8 @@ describe("amm", () => {
 
   it("`deposit_liquidity` method with mint A excess!", async () => {
     const poolId = 0;
-    const AMOUNT_A = 10_000_000; // 10 tokens
-    const AMOUNT_B = 5_000_000; // 5 tokens
+    const AMOUNT_A = 1_000_000_000; // 1000 tokens
+    const AMOUNT_B = 500_000_000; // 500 tokens
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
 
@@ -224,8 +259,8 @@ describe("amm", () => {
 
   it("`deposit_liquidity` method with mint B excess!", async () => {
     const poolId = 0;
-    const AMOUNT_A = 2_500_000; // 2.5 tokens
-    const AMOUNT_B = 7_500_000; // 7.5 tokens
+    const AMOUNT_A = 250_000_000; // 250 tokens
+    const AMOUNT_B = 750_000_000; // 750 tokens
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
 
@@ -301,5 +336,85 @@ describe("amm", () => {
 
     lpBalance -= lpAmount;
     console.log("lp balance:", lpBalance);
+  });
+
+  it("`swap` method using 'exact in' param!", async () => {
+    const poolId = 0;
+    const INPUT_AMOUNT = 10_000_000; // 10 token
+
+    const param: anchor.IdlTypes<Amm>["swapParams"] = {
+      exactIn: { inputAmount: bn(INPUT_AMOUNT) },
+    };
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+    console.log("A amount in vault:", prevLiquidityPool.amountMintA);
+    console.log("B amount in vault:", prevLiquidityPool.amountMintB);
+
+    const tx = await program.methods
+      .swap(bn(poolId), param)
+      .accounts({
+        signer: user.publicKey,
+        inputMint: mintA,
+        outputMint: mintB,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    console.log("`swap` tx signature:", tx);
+
+    const { inputAmount, outputAmount } = calculateSwapAmounts(
+      param,
+      prevLiquidityPool.amountMintA,
+      prevLiquidityPool.amountMintB,
+      prevLiquidityPool.feeBps
+    );
+
+    console.log({ inputAmount, outputAmount });
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + inputAmount);
+    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB - outputAmount);
+  });
+
+  it("`swap` method using 'exact out' param!", async () => {
+    const poolId = 0;
+    const OUTPUT_AMOUNT = 20_000_000; // 2 token
+
+    const param: anchor.IdlTypes<Amm>["swapParams"] = {
+      exactOut: { outputAmount: bn(OUTPUT_AMOUNT) },
+    };
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+    console.log("A amount in vault:", prevLiquidityPool.amountMintA);
+    console.log("B amount in vault:", prevLiquidityPool.amountMintB);
+
+    const tx = await program.methods
+      .swap(bn(poolId), param)
+      .accounts({
+        signer: user.publicKey,
+        inputMint: mintA,
+        outputMint: mintB,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    console.log("`swap` tx signature:", tx);
+
+    const { inputAmount, outputAmount } = calculateSwapAmounts(
+      param,
+      prevLiquidityPool.amountMintA,
+      prevLiquidityPool.amountMintB,
+      prevLiquidityPool.feeBps
+    );
+
+    console.log({ inputAmount, outputAmount });
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + inputAmount);
+    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB - outputAmount);
   });
 });

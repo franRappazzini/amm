@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constants::MINIMUM_LIQUIDITY, errors::AmmError};
+use crate::{constants::MINIMUM_LIQUIDITY, errors::AmmError, instructions::SwapParams};
 
 /// Calculates the initial liquidity tokens to mint for a liquidity pool.
 ///
@@ -288,4 +288,82 @@ pub fn calculate_claimable_amount(lp_amount: u64, lp_supply: u64, reserve: u64) 
         .ok_or(AmmError::MathUnderflow)?
         .try_into()
         .map_err(|_| AmmError::MathUnderflow)?)
+}
+
+pub fn calculate_swap_amounts(
+    swap_params: &SwapParams,
+    reserve_input: u64,
+    reserve_output: u64,
+    fee_bps: u16,
+) -> Result<(u64, u64)> {
+    let fee_multiplier = 10_000u128
+        .checked_sub(fee_bps as u128)
+        .ok_or(AmmError::MathUnderflow)?;
+
+    match swap_params {
+        SwapParams::ExactIn { input_amount } => {
+            require!(*input_amount > 0, AmmError::InsufficientInputAmount);
+            require!(
+                *input_amount < reserve_input,
+                AmmError::ExcessiveInputAmount
+            );
+
+            // isolating a - if the trader deposits an amount `b` of token Y, they will receive an amount `a` of token X
+            // a = A * (1 - ϕ)*b / (B + (1 - ϕ)*b)
+            let input_amount_after_fee = (*input_amount as u128)
+                .checked_mul(fee_multiplier)
+                .ok_or(AmmError::MathOverflow)?
+                .checked_div(10_000)
+                .ok_or(AmmError::MathUnderflow)?;
+
+            msg!("input_amount_after_fee: {}", input_amount_after_fee);
+
+            let numerator = (reserve_output as u128)
+                .checked_mul(input_amount_after_fee)
+                .ok_or(AmmError::MathOverflow)?;
+
+            let denominator = (reserve_input as u128)
+                .checked_add(input_amount_after_fee)
+                .ok_or(AmmError::MathOverflow)?;
+
+            Ok((
+                *input_amount,
+                numerator
+                    .checked_div(denominator)
+                    .ok_or(AmmError::MathUnderflow)?
+                    .try_into()
+                    .map_err(|_| AmmError::MathOverflow)?,
+            ))
+        }
+        SwapParams::ExactOut { output_amount } => {
+            require!(*output_amount > 0, AmmError::InsufficientOutputAmount);
+            require!(
+                *output_amount < reserve_output,
+                AmmError::ExcessiveOutputAmount
+            );
+
+            // isolating b - in order to receive an amount `a` of token X, the trader must deposit an amount `b` of token Y
+            // b = aB / (A - a) * (1 - ϕ)
+            let numerator = (*output_amount as u128)
+                .checked_mul(reserve_input as u128)
+                .ok_or(AmmError::MathOverflow)?;
+
+            let denominator = (reserve_output as u128)
+                .checked_sub(*output_amount as u128)
+                .ok_or(AmmError::ExcessiveOutputAmount)?
+                .checked_mul(fee_multiplier)
+                .ok_or(AmmError::MathOverflow)?
+                .checked_div(10_000)
+                .ok_or(AmmError::MathUnderflow)?;
+
+            Ok((
+                numerator
+                    .checked_div(denominator)
+                    .ok_or(AmmError::MathUnderflow)?
+                    .try_into()
+                    .map_err(|_| AmmError::MathOverflow)?,
+                *output_amount,
+            ))
+        }
+    }
 }

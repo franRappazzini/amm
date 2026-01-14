@@ -1,4 +1,6 @@
+import { Amm } from "../../target/types/amm";
 import { BN } from "bn.js";
+import { IdlTypes } from "@coral-xyz/anchor";
 
 export function bn(num: number) {
   return new BN(num);
@@ -55,4 +57,45 @@ export function calculateClaimableAmount(
   mintReserve: number
 ): number {
   return Math.floor((lpAmount / lpSupply) * mintReserve);
+}
+
+// isolating a - if the trader deposits an amount `b` of token Y, they will receive an amount `a` of token X
+// a = A * (1 - ϕ)*b / (B + (1 - ϕ)*b)
+// isolating b - in order to receive an amount `a` of token X, the trader must deposit an amount `b` of token Y
+// b = aB / (A - a) * (1 - ϕ)
+export function calculateSwapAmounts(
+  swapParams: IdlTypes<Amm>["swapParams"],
+  reserveInput: number,
+  reserveOutput: number,
+  feeBps: number
+): { inputAmount: number; outputAmount: number } {
+  const feeMultiplier = 10000 - feeBps;
+
+  if ("exactIn" in swapParams) {
+    const inputAmount = swapParams.exactIn.inputAmount.toNumber();
+    if (inputAmount <= 0) {
+      throw new Error("InsufficientInputAmount");
+    }
+
+    const inputAmountAfterFee = Math.floor((inputAmount * feeMultiplier) / 10000);
+
+    const numerator = reserveOutput * inputAmountAfterFee;
+    const denominator = reserveInput + inputAmountAfterFee;
+
+    const outputAmount = Math.floor(numerator / denominator);
+
+    return { inputAmount, outputAmount };
+  } else {
+    const outputAmount = swapParams.exactOut.outputAmount.toNumber();
+    if (outputAmount <= 0) {
+      throw new Error("InsufficientInputAmount");
+    }
+
+    const numerator = outputAmount * reserveInput;
+    const denominator = Math.floor(((reserveOutput - outputAmount) * feeMultiplier) / 10000);
+
+    const inputAmount = Math.floor(numerator / denominator);
+
+    return { inputAmount, outputAmount };
+  }
 }
