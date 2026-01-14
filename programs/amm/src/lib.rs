@@ -34,4 +34,8 @@ pub mod amm {
     ) -> Result<()> {
         ctx.accounts.deposit_liquidity(pool_id, amount_a, amount_b)
     }
+
+    pub fn redeem_lp(ctx: Context<RedeemLp>, pool_id: u64, lp_amount: u64) -> Result<()> {
+        ctx.accounts.redeem_lp(pool_id, lp_amount)
+    }
 }

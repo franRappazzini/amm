@@ -47,3 +47,12 @@ export function calculateDepositExcess(
 
   return { newAmountA, newAmountB };
 }
+
+// (m / M) * T)
+export function calculateClaimableAmount(
+  lpAmount: number,
+  lpSupply: number,
+  mintReserve: number
+): number {
+  return Math.floor((lpAmount / lpSupply) * mintReserve);
+}

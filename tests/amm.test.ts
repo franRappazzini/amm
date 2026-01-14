@@ -9,6 +9,7 @@ import {
 } from "@solana/spl-token";
 import {
   bn,
+  calculateClaimableAmount,
   calculateDepositExcess,
   initialMintLiquidity,
   subsequentMintLiquidity,
@@ -30,6 +31,7 @@ describe("amm", () => {
   const program = anchor.workspace.amm as Program<Amm>;
 
   const liquidityProvider = anchor.web3.Keypair.generate();
+  let lpBalance = 0;
 
   let mintA: PublicKey;
   let mintB: PublicKey;
@@ -137,6 +139,9 @@ describe("amm", () => {
     expect(liquidityPool.amountMintA).eq(AMOUNT_A);
     expect(liquidityPool.amountMintB).eq(AMOUNT_B);
     expect(liquidityPool.lpSupply).eq(liquidity);
+
+    lpBalance += liquidity;
+    console.log("lp balance:", lpBalance);
   });
 
   it("`deposit_liquidity` method!", async () => {
@@ -170,38 +175,9 @@ describe("amm", () => {
     expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + AMOUNT_A);
     expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + AMOUNT_B);
     expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
-  });
-  it("`deposit_liquidity` method!", async () => {
-    const poolId = 0;
-    const AMOUNT_A = 5_000_000; // 5 tokens
-    const AMOUNT_B = 10_000_000; // 10 tokens
 
-    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
-
-    const tx = await program.methods
-      .depositLiquidity(bn(poolId), bn(AMOUNT_A), bn(AMOUNT_B))
-      .accounts({
-        provider: liquidityProvider.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([liquidityProvider])
-      .rpc();
-
-    console.log("`deposit_liquidity` tx signature:", tx);
-
-    const liquidity = subsequentMintLiquidity(
-      AMOUNT_A,
-      AMOUNT_B,
-      prevLiquidityPool.lpSupply,
-      prevLiquidityPool.amountMintA,
-      prevLiquidityPool.amountMintB
-    );
-
-    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
-
-    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + AMOUNT_A);
-    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + AMOUNT_B);
-    expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
+    lpBalance += liquidity;
+    console.log("lp balance:", lpBalance);
   });
 
   it("`deposit_liquidity` method with mint A excess!", async () => {
@@ -241,6 +217,9 @@ describe("amm", () => {
     expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + newAmountA);
     expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + newAmountB);
     expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
+
+    lpBalance += liquidity;
+    console.log("lp balance:", lpBalance);
   });
 
   it("`deposit_liquidity` method with mint B excess!", async () => {
@@ -280,5 +259,47 @@ describe("amm", () => {
     expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + newAmountA);
     expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + newAmountB);
     expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
+
+    lpBalance += liquidity;
+    console.log("lp balance:", lpBalance);
+  });
+
+  it("`redeem_lp` method!", async () => {
+    const poolId = 0;
+    const lpAmount = Math.floor(lpBalance / 2);
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    const tx = await program.methods
+      .redeemLp(bn(poolId), bn(lpAmount))
+      .accounts({
+        redeemer: liquidityProvider.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([liquidityProvider])
+      .rpc();
+
+    console.log("`redeem_lp` tx signature:", tx);
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    const claimableA = calculateClaimableAmount(
+      lpAmount,
+      prevLiquidityPool.lpSupply,
+      prevLiquidityPool.amountMintA
+    );
+
+    const claimableB = calculateClaimableAmount(
+      lpAmount,
+      prevLiquidityPool.lpSupply,
+      prevLiquidityPool.amountMintB
+    );
+
+    expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply - lpAmount);
+    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA - claimableA);
+    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB - claimableB);
+
+    lpBalance -= lpAmount;
+    console.log("lp balance:", lpBalance);
   });
 });

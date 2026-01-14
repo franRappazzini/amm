@@ -236,3 +236,56 @@ pub fn calculate_deposit_excess(
         Ok((amount_a, amount_b))
     }
 }
+
+/// Calculates the claimable amount of a token when burning LP tokens.
+///
+/// When a liquidity provider wants to withdraw liquidity from the pool, they burn their LP tokens
+/// and receive a proportional share of the pool's reserves based on their ownership percentage.
+///
+/// # Formula
+/// ```text
+/// claimable = (m / M) * T
+/// ```
+///
+/// Where:
+/// - `m` = amount of LP tokens being burned (lp_amount)
+/// - `M` = total supply of LP tokens (lp_supply)
+/// - `T` = current reserve of the token in the pool (reserve)
+///
+/// # Implementation Note
+/// The formula is reordered to `(m * T) / M` to avoid integer division resulting in zero.
+/// If we compute `m / M` first with integer arithmetic, the result would be truncated to 0
+/// when `m < M`, which is almost always the case.
+///
+/// # Example
+/// If the pool has:
+/// - Total LP supply: 1000 tokens
+/// - Token reserve: 5000 tokens
+/// - User burns: 100 LP tokens
+///
+/// The user receives: `(100 * 5000) / 1000 = 500` tokens
+///
+/// This represents 10% of the pool (100/1000), so they get 10% of the reserves (500/5000).
+///
+/// # Parameters
+/// * `lp_amount` - Amount of LP tokens being burned (m)
+/// * `lp_supply` - Total supply of LP tokens in circulation (M)
+/// * `reserve` - Current reserve of the token in the pool (T)
+///
+/// # Returns
+/// The amount of tokens the liquidity provider can claim from the pool.
+///
+/// # Errors
+/// * `AmmError::MathOverflow` - If multiplication overflows u128 or result exceeds u64
+/// * `AmmError::MathUnderflow` - If division would result in underflow
+pub fn calculate_claimable_amount(lp_amount: u64, lp_supply: u64, reserve: u64) -> Result<u64> {
+    let res = (lp_amount as u128)
+        .checked_mul(reserve as u128)
+        .ok_or(AmmError::MathOverflow)?;
+
+    Ok(res
+        .checked_div(lp_supply as u128)
+        .ok_or(AmmError::MathUnderflow)?
+        .try_into()
+        .map_err(|_| AmmError::MathUnderflow)?)
+}

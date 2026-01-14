@@ -10,4 +10,6 @@ pub enum AmmError {
     MathUnderflow,
     #[msg("Insufficient liquidity minted")]
     InsufficientLiquidityMinted,
+    #[msg("Insufficient input amount")]
+    InsufficientInputAmount,
 }

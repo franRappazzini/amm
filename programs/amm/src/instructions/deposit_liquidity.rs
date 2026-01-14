@@ -76,6 +76,11 @@ pub struct DepositLiquidity<'info> {
 
 impl<'info> DepositLiquidity<'info> {
     pub fn deposit_liquidity(&mut self, pool_id: u64, amount_a: u64, amount_b: u64) -> Result<()> {
+        require!(
+            amount_a > 0 && amount_b > 0,
+            AmmError::InsufficientInputAmount
+        );
+
         // calculate possible excess
         let (new_amount_a, new_amount_b) = utils::math::calculate_deposit_excess(
             amount_a,
@@ -104,6 +109,7 @@ impl<'info> DepositLiquidity<'info> {
             &self.mint_a,
             new_amount_a,
             &self.token_program,
+            None,
         )?;
 
         utils::token::transfer_spl(
@@ -113,6 +119,7 @@ impl<'info> DepositLiquidity<'info> {
             &self.mint_b,
             new_amount_b,
             &self.token_program,
+            None,
         )?;
 
         // mint lp token

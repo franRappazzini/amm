@@ -105,6 +105,11 @@ pub struct CreateLiquidityPool<'info> {
 
 impl<'info> CreateLiquidityPool<'info> {
     pub fn create_liquidity_pool(&mut self, amount_a: u64, amount_b: u64, bump: u8) -> Result<()> {
+        require!(
+            amount_a > 0 && amount_b > 0,
+            AmmError::InsufficientInputAmount
+        );
+
         // transfer tokens to vaults
         utils::token::transfer_spl(
             &self.creator,
@@ -113,6 +118,7 @@ impl<'info> CreateLiquidityPool<'info> {
             &self.mint_a,
             amount_a,
             &self.token_program,
+            None,
         )?;
 
         utils::token::transfer_spl(
@@ -122,6 +128,7 @@ impl<'info> CreateLiquidityPool<'info> {
             &self.mint_b,
             amount_b,
             &self.token_program,
+            None,
         )?;
 
         // mint lp token
