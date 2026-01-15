@@ -67,9 +67,12 @@ export function calculateSwapAmounts(
   swapParams: IdlTypes<Amm>["swapParams"],
   reserveInput: number,
   reserveOutput: number,
-  feeBps: number
-): { inputAmount: number; outputAmount: number } {
-  const feeMultiplier = 10000 - feeBps;
+  feeBps: number,
+  protocolFeeBps: number
+): { inputAmount: number; outputAmount: number; protocolFeeAmount: number } {
+  const totalFeeBps = feeBps + protocolFeeBps;
+
+  const feeMultiplier = 10000 - totalFeeBps;
 
   if ("exactIn" in swapParams) {
     const inputAmount = swapParams.exactIn.inputAmount.toNumber();
@@ -84,7 +87,9 @@ export function calculateSwapAmounts(
 
     const outputAmount = Math.floor(numerator / denominator);
 
-    return { inputAmount, outputAmount };
+    const protocolFeeAmount = Math.floor((inputAmount * protocolFeeBps) / 10000);
+
+    return { inputAmount, outputAmount, protocolFeeAmount };
   } else {
     const outputAmount = swapParams.exactOut.outputAmount.toNumber();
     if (outputAmount <= 0) {
@@ -96,6 +101,8 @@ export function calculateSwapAmounts(
 
     const inputAmount = Math.floor(numerator / denominator);
 
-    return { inputAmount, outputAmount };
+    const protocolFeeAmount = Math.floor((inputAmount * protocolFeeBps) / 10000);
+
+    return { inputAmount, outputAmount, protocolFeeAmount };
   }
 }

@@ -165,12 +165,15 @@ impl<'info> CreateLiquidityPool<'info> {
             mint_a: self.mint_a.key(),
             mint_b: self.mint_b.key(),
             lp_mint: self.lp_mint.key(),
+            protocol_fee_bps: self.global_config.protocol_fee_bps,
             fee_bps: self.global_config.fee_bps,
             lp_supply: liquidity
                 .checked_add(MINIMUM_LIQUIDITY)
                 .ok_or(AmmError::MathOverflow)?,
             amount_mint_a: amount_a,
             amount_mint_b: amount_b,
+            accumulated_protocol_fee_a: 0,
+            accumulated_protocol_fee_b: 0,
         });
 
         // update global config counter

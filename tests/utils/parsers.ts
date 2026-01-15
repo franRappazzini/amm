@@ -24,9 +24,12 @@ interface ParsedLiquidityPool {
   mintB: string;
   lpMint: string;
   feeBps: number;
+  protocolFeeBps: number;
   lpSupply: number;
   amountMintA: number;
   amountMintB: number;
+  accumulatedProtocolFeeA: number;
+  accumulatedProtocolFeeB: number;
 }
 
 const liquidityPoolParser = (
@@ -41,6 +44,8 @@ const liquidityPoolParser = (
     lpSupply: data.lpSupply.toNumber(),
     amountMintA: data.amountMintA.toNumber(),
     amountMintB: data.amountMintB.toNumber(),
+    accumulatedProtocolFeeA: data.accumulatedProtocolFeeA.toNumber(),
+    accumulatedProtocolFeeB: data.accumulatedProtocolFeeB.toNumber(),
   };
 };
 

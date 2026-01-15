@@ -20,10 +20,11 @@ pub struct Initialize<'info> {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn initialize(&mut self, fee_bps: u16, bump: u8) -> Result<()> {
+    pub fn initialize(&mut self, protocol_fee_bps: u16, fee_bps: u16, bump: u8) -> Result<()> {
         self.global_config.set_inner(GlobalConfig {
             authority: self.authority.key(),
             bump,
+            protocol_fee_bps,
             fee_bps,
             pool_count: 0,
         });

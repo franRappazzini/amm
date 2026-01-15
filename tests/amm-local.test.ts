@@ -117,9 +117,10 @@ describe("amm", () => {
   });
 
   it("`initialize` method!", async () => {
-    const FEE_BPS = 30; // 0.3%
+    const PROTOCOL_FEE_BPS = 5; // 0.05%
+    const FEE_BPS = 25; // 0.25%
 
-    const tx = await program.methods.initialize(FEE_BPS).rpc();
+    const tx = await program.methods.initialize(PROTOCOL_FEE_BPS, FEE_BPS).rpc();
     console.log("`initialize` tx signature:", tx);
 
     const [globalConfig] = await getGlobalConfigAccount();
@@ -207,8 +208,8 @@ describe("amm", () => {
 
     const [liquidityPool] = await getLiquidityPoolAccount(poolId);
 
-    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + AMOUNT_A);
-    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + AMOUNT_B);
+    expect(liquidityPool.amountMintA, "amount mint A").eq(prevLiquidityPool.amountMintA + AMOUNT_A);
+    expect(liquidityPool.amountMintB, "amount mint B").eq(prevLiquidityPool.amountMintB + AMOUNT_B);
     expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
 
     lpBalance += liquidity;
@@ -249,8 +250,12 @@ describe("amm", () => {
       liquidityPool.amountMintB
     );
 
-    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + newAmountA);
-    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB + newAmountB);
+    expect(liquidityPool.amountMintA, "amount mint A").eq(
+      prevLiquidityPool.amountMintA + newAmountA
+    );
+    expect(liquidityPool.amountMintB, "amount mint B").eq(
+      prevLiquidityPool.amountMintB + newAmountB
+    );
     expect(liquidityPool.lpSupply).eq(prevLiquidityPool.lpSupply + liquidity);
 
     lpBalance += liquidity;
@@ -338,7 +343,7 @@ describe("amm", () => {
     console.log("lp balance:", lpBalance);
   });
 
-  it("`swap` method using 'exact in' param!", async () => {
+  it("`swap` method using 'exact in' param with mint A!", async () => {
     const poolId = 0;
     const INPUT_AMOUNT = 10_000_000; // 10 token
 
@@ -363,22 +368,30 @@ describe("amm", () => {
 
     console.log("`swap` tx signature:", tx);
 
-    const { inputAmount, outputAmount } = calculateSwapAmounts(
+    const { inputAmount, outputAmount, protocolFeeAmount } = calculateSwapAmounts(
       param,
       prevLiquidityPool.amountMintA,
       prevLiquidityPool.amountMintB,
-      prevLiquidityPool.feeBps
+      prevLiquidityPool.feeBps,
+      prevLiquidityPool.protocolFeeBps
     );
 
-    console.log({ inputAmount, outputAmount });
+    console.log({ inputAmount, outputAmount, protocolFeeAmount });
 
     const [liquidityPool] = await getLiquidityPoolAccount(poolId);
 
-    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + inputAmount);
-    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB - outputAmount);
+    expect(liquidityPool.amountMintA, "amount mint A").eq(
+      prevLiquidityPool.amountMintA + inputAmount - protocolFeeAmount
+    );
+    expect(liquidityPool.amountMintB, "amount mint B").eq(
+      prevLiquidityPool.amountMintB - outputAmount
+    );
+    expect(liquidityPool.accumulatedProtocolFeeA, "accumulated fee A").eq(
+      prevLiquidityPool.accumulatedProtocolFeeA + protocolFeeAmount
+    );
   });
 
-  it("`swap` method using 'exact out' param!", async () => {
+  it("`swap` method using 'exact out' param with mint A!", async () => {
     const poolId = 0;
     const OUTPUT_AMOUNT = 20_000_000; // 2 token
 
@@ -403,18 +416,137 @@ describe("amm", () => {
 
     console.log("`swap` tx signature:", tx);
 
-    const { inputAmount, outputAmount } = calculateSwapAmounts(
+    const { inputAmount, outputAmount, protocolFeeAmount } = calculateSwapAmounts(
       param,
       prevLiquidityPool.amountMintA,
       prevLiquidityPool.amountMintB,
-      prevLiquidityPool.feeBps
+      prevLiquidityPool.feeBps,
+      prevLiquidityPool.protocolFeeBps
     );
 
-    console.log({ inputAmount, outputAmount });
+    console.log({ inputAmount, outputAmount, protocolFeeAmount });
 
     const [liquidityPool] = await getLiquidityPoolAccount(poolId);
 
-    expect(liquidityPool.amountMintA).eq(prevLiquidityPool.amountMintA + inputAmount);
-    expect(liquidityPool.amountMintB).eq(prevLiquidityPool.amountMintB - outputAmount);
+    expect(liquidityPool.amountMintA, "amount mint A").eq(
+      prevLiquidityPool.amountMintA + inputAmount - protocolFeeAmount
+    );
+    expect(liquidityPool.amountMintB, "amount mint B").eq(
+      prevLiquidityPool.amountMintB - outputAmount
+    );
+    expect(liquidityPool.accumulatedProtocolFeeA, "accumulated fee A").eq(
+      prevLiquidityPool.accumulatedProtocolFeeA + protocolFeeAmount
+    );
+  });
+
+  it("`swap` method using 'exact in' param with mint B!", async () => {
+    const poolId = 0;
+    const INPUT_AMOUNT = 10_000_000; // 10 token
+
+    const param: anchor.IdlTypes<Amm>["swapParams"] = {
+      exactIn: { inputAmount: bn(INPUT_AMOUNT) },
+    };
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+    console.log("A amount in vault:", prevLiquidityPool.amountMintA);
+    console.log("B amount in vault:", prevLiquidityPool.amountMintB);
+
+    const tx = await program.methods
+      .swap(bn(poolId), param)
+      .accounts({
+        signer: user.publicKey,
+        inputMint: mintB,
+        outputMint: mintA,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    console.log("`swap` tx signature:", tx);
+
+    const { inputAmount, outputAmount, protocolFeeAmount } = calculateSwapAmounts(
+      param,
+      prevLiquidityPool.amountMintB,
+      prevLiquidityPool.amountMintA,
+      prevLiquidityPool.feeBps,
+      prevLiquidityPool.protocolFeeBps
+    );
+
+    console.log({ inputAmount, outputAmount, protocolFeeAmount });
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    expect(liquidityPool.amountMintB, "amount mint B").eq(
+      prevLiquidityPool.amountMintB + inputAmount - protocolFeeAmount
+    );
+    expect(liquidityPool.amountMintA, "amount mint A").eq(
+      prevLiquidityPool.amountMintA - outputAmount
+    );
+    expect(liquidityPool.accumulatedProtocolFeeB, "accumulated fee B").eq(
+      prevLiquidityPool.accumulatedProtocolFeeB + protocolFeeAmount
+    );
+  });
+
+  it("`swap` method using 'exact out' param with mint B!", async () => {
+    const poolId = 0;
+    const OUTPUT_AMOUNT = 2_000_000; // 2 token
+
+    const param: anchor.IdlTypes<Amm>["swapParams"] = {
+      exactOut: { outputAmount: bn(OUTPUT_AMOUNT) },
+    };
+
+    const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
+    console.log("A amount in vault:", prevLiquidityPool.amountMintA);
+    console.log("B amount in vault:", prevLiquidityPool.amountMintB);
+
+    const tx = await program.methods
+      .swap(bn(poolId), param)
+      .accounts({
+        signer: user.publicKey,
+        inputMint: mintB,
+        outputMint: mintA,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    console.log("`swap` tx signature:", tx);
+
+    const { inputAmount, outputAmount, protocolFeeAmount } = calculateSwapAmounts(
+      param,
+      prevLiquidityPool.amountMintB,
+      prevLiquidityPool.amountMintA,
+      prevLiquidityPool.feeBps,
+      prevLiquidityPool.protocolFeeBps
+    );
+
+    console.log({ inputAmount, outputAmount, protocolFeeAmount });
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+
+    expect(liquidityPool.amountMintB, "amount mint B").eq(
+      prevLiquidityPool.amountMintB + inputAmount - protocolFeeAmount
+    );
+    expect(liquidityPool.amountMintA, "amount mint A").eq(
+      prevLiquidityPool.amountMintA - outputAmount
+    );
+    expect(liquidityPool.accumulatedProtocolFeeB, "accumulated fee B").eq(
+      prevLiquidityPool.accumulatedProtocolFeeB + protocolFeeAmount
+    );
+  });
+
+  it("`withdraw_protocol_fees` method!", async () => {
+    const poolId = 0;
+
+    const tx = await program.methods
+      .withdrawProtocolFees(bn(poolId))
+      .accounts({ tokenProgram: TOKEN_PROGRAM_ID })
+      .rpc();
+
+    console.log("`withdraw_protocol_fees` tx signature:", tx);
+
+    const [liquidityPool] = await getLiquidityPoolAccount(poolId);
+    expect(liquidityPool.accumulatedProtocolFeeA).eq(0);
+    expect(liquidityPool.accumulatedProtocolFeeB).eq(0);
   });
 });

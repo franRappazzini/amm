@@ -294,15 +294,20 @@ pub fn calculate_swap_amounts(
     swap_params: &SwapParams,
     reserve_input: u64,
     reserve_output: u64,
-    fee_bps: u16,
-) -> Result<(u64, u64)> {
+    pool_fee_bps: u16,
+    protocol_fee_bps: u16,
+) -> Result<(u64, u64, u64)> {
     require!(
         reserve_input > 0 && reserve_output > 0,
         AmmError::InsufficientReserve
     );
 
+    let total_fee_bps = (pool_fee_bps)
+        .checked_add(protocol_fee_bps)
+        .ok_or(AmmError::MathOverflow)?;
+
     let fee_multiplier = 10_000u128
-        .checked_sub(fee_bps as u128)
+        .checked_sub(total_fee_bps as u128)
         .ok_or(AmmError::MathUnderflow)?;
 
     match swap_params {
@@ -331,14 +336,22 @@ pub fn calculate_swap_amounts(
                 .checked_add(input_amount_after_fee)
                 .ok_or(AmmError::MathOverflow)?;
 
-            Ok((
-                *input_amount,
-                numerator
-                    .checked_div(denominator)
-                    .ok_or(AmmError::MathUnderflow)?
-                    .try_into()
-                    .map_err(|_| AmmError::MathOverflow)?,
-            ))
+            let output_amount: u64 = numerator
+                .checked_div(denominator)
+                .ok_or(AmmError::MathUnderflow)?
+                .try_into()
+                .map_err(|_| AmmError::MathOverflow)?;
+
+            // Calcular el fee del protocolo del input_amount
+            let protocol_fee_amount = (*input_amount as u128)
+                .checked_mul(protocol_fee_bps as u128)
+                .ok_or(AmmError::MathOverflow)?
+                .checked_div(10_000)
+                .ok_or(AmmError::MathUnderflow)?
+                .try_into()
+                .map_err(|_| AmmError::MathOverflow)?;
+
+            Ok((*input_amount, output_amount, protocol_fee_amount))
         }
         SwapParams::ExactOut { output_amount } => {
             require!(*output_amount > 0, AmmError::InsufficientOutputAmount);
@@ -361,14 +374,22 @@ pub fn calculate_swap_amounts(
                 .checked_div(10_000)
                 .ok_or(AmmError::MathUnderflow)?;
 
-            Ok((
-                numerator
-                    .checked_div(denominator)
-                    .ok_or(AmmError::MathUnderflow)?
-                    .try_into()
-                    .map_err(|_| AmmError::MathOverflow)?,
-                *output_amount,
-            ))
+            let input_amount: u64 = numerator
+                .checked_div(denominator)
+                .ok_or(AmmError::MathUnderflow)?
+                .try_into()
+                .map_err(|_| AmmError::MathOverflow)?;
+
+            // Calcular el fee del protocolo del input_amount
+            let protocol_fee_amount = (input_amount as u128)
+                .checked_mul(protocol_fee_bps as u128)
+                .ok_or(AmmError::MathOverflow)?
+                .checked_div(10_000)
+                .ok_or(AmmError::MathUnderflow)?
+                .try_into()
+                .map_err(|_| AmmError::MathOverflow)?;
+
+            Ok((input_amount, *output_amount, protocol_fee_amount))
         }
     }
 }

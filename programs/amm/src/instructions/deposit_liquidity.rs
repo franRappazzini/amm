@@ -82,7 +82,7 @@ impl<'info> DepositLiquidity<'info> {
         );
 
         // calculate possible excess
-        let (new_amount_a, new_amount_b) = utils::math::calculate_deposit_excess(
+        let (depositable_amount_a, depositable_amount_b) = utils::math::calculate_deposit_excess(
             amount_a,
             amount_b,
             self.liquidity_pool.amount_mint_a,
@@ -97,8 +97,8 @@ impl<'info> DepositLiquidity<'info> {
 
         msg!(
             "Depositing amounts: {} of A and {} of B",
-            new_amount_a,
-            new_amount_b
+            depositable_amount_a,
+            depositable_amount_b
         );
 
         // transfer tokens to vaults
@@ -107,7 +107,7 @@ impl<'info> DepositLiquidity<'info> {
             &self.provider_a_ata,
             &self.mint_a_vault,
             &self.mint_a,
-            new_amount_a,
+            depositable_amount_a,
             &self.token_program,
             None,
         )?;
@@ -117,7 +117,7 @@ impl<'info> DepositLiquidity<'info> {
             &self.provider_b_ata,
             &self.mint_b_vault,
             &self.mint_b,
-            new_amount_b,
+            depositable_amount_b,
             &self.token_program,
             None,
         )?;
@@ -147,8 +147,8 @@ impl<'info> DepositLiquidity<'info> {
         )?;
 
         // update liquidity pool state
-        self.liquidity_pool.add_liquidity_a(new_amount_a)?;
-        self.liquidity_pool.add_liquidity_b(new_amount_b)?;
+        self.liquidity_pool.add_liquidity_a(depositable_amount_a)?;
+        self.liquidity_pool.add_liquidity_b(depositable_amount_b)?;
         self.liquidity_pool.add_liquidity_lp(liquidity)
     }
 }

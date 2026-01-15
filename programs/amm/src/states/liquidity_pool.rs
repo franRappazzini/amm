@@ -10,10 +10,13 @@ pub struct LiquidityPool {
     pub mint_a: Pubkey,
     pub mint_b: Pubkey,
     pub lp_mint: Pubkey,
+    pub protocol_fee_bps: u16,
     pub fee_bps: u16,
     pub lp_supply: u64,
     pub amount_mint_a: u64,
     pub amount_mint_b: u64,
+    pub accumulated_protocol_fee_a: u64,
+    pub accumulated_protocol_fee_b: u64,
 }
 
 impl LiquidityPool {
@@ -64,6 +67,22 @@ impl LiquidityPool {
             .lp_supply
             .checked_sub(amount)
             .ok_or(AmmError::MathUnderflow)?;
+        Ok(())
+    }
+
+    pub fn accumulate_protocol_fee_a(&mut self, amount: u64) -> Result<()> {
+        self.accumulated_protocol_fee_a = self
+            .accumulated_protocol_fee_a
+            .checked_add(amount)
+            .ok_or(AmmError::MathOverflow)?;
+        Ok(())
+    }
+
+    pub fn accumulate_protocol_fee_b(&mut self, amount: u64) -> Result<()> {
+        self.accumulated_protocol_fee_b = self
+            .accumulated_protocol_fee_b
+            .checked_add(amount)
+            .ok_or(AmmError::MathOverflow)?;
         Ok(())
     }
 }

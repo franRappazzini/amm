@@ -13,8 +13,9 @@ declare_id!("92NnZLZ8TS5Ay1UwAnQmtbYWbAFcEWtZcn7MwVkLhhMZ");
 pub mod amm {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, fee_bps: u16) -> Result<()> {
-        ctx.accounts.initialize(fee_bps, ctx.bumps.global_config)
+    pub fn initialize(ctx: Context<Initialize>, protocol_fee_bps: u16, fee_bps: u16) -> Result<()> {
+        ctx.accounts
+            .initialize(protocol_fee_bps, fee_bps, ctx.bumps.global_config)
     }
 
     pub fn create_liquidity_pool(
@@ -41,5 +42,9 @@ pub mod amm {
 
     pub fn swap(ctx: Context<Swap>, pool_id: u64, params: SwapParams) -> Result<()> {
         ctx.accounts.swap(pool_id, params)
+    }
+
+    pub fn withdraw_protocol_fees(ctx: Context<WithdrawProtocolFees>, pool_id: u64) -> Result<()> {
+        ctx.accounts.withdraw_protocol_fees(pool_id)
     }
 }

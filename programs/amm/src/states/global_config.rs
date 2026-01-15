@@ -7,6 +7,7 @@ use crate::constants::DISCRIMINATOR_SIZE;
 pub struct GlobalConfig {
     pub authority: Pubkey,
     pub bump: u8,
+    pub protocol_fee_bps: u16,
     pub fee_bps: u16,
     pub pool_count: u64,
 }

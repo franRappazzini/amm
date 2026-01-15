@@ -69,13 +69,16 @@ impl<'info> Swap<'info> {
         // calculate and transfer input mint from signer to vault
         let input_is_mint_a = self.liquidity_pool.mint_a == self.input_mint.key();
 
-        let (input_amount, output_amount) = self.calculate_amounts(&params, input_is_mint_a)?;
+        let (input_amount, output_amount, protocol_fee_amount) =
+            self.calculate_amounts(&params, input_is_mint_a)?;
 
         msg!(
             "Swapping {} of input mint for {} of output mint",
             input_amount,
             output_amount
         );
+
+        msg!("Applying protocol fee of {}", protocol_fee_amount);
 
         utils::token::transfer_spl(
             &self.signer,
@@ -105,10 +108,19 @@ impl<'info> Swap<'info> {
         )?;
 
         // update liquidity pool state
-        self.update_liquidity_pool(input_amount, output_amount, input_is_mint_a)
+        self.update_liquidity_pool(
+            input_amount,
+            output_amount,
+            protocol_fee_amount,
+            input_is_mint_a,
+        )
     }
 
-    fn calculate_amounts(&self, params: &SwapParams, input_is_mint_a: bool) -> Result<(u64, u64)> {
+    fn calculate_amounts(
+        &self,
+        params: &SwapParams,
+        input_is_mint_a: bool,
+    ) -> Result<(u64, u64, u64)> {
         let (reserve_input, reserve_output) = if input_is_mint_a {
             (
                 self.liquidity_pool.amount_mint_a,
@@ -126,6 +138,7 @@ impl<'info> Swap<'info> {
             reserve_input,
             reserve_output,
             self.liquidity_pool.fee_bps,
+            self.liquidity_pool.protocol_fee_bps,
         )
     }
 
@@ -133,14 +146,23 @@ impl<'info> Swap<'info> {
         &mut self,
         input_amount: u64,
         output_amount: u64,
+        protocol_fee_amount: u64,
         input_is_mint_a: bool,
     ) -> Result<()> {
+        let pool_input = input_amount
+            .checked_sub(protocol_fee_amount)
+            .ok_or(AmmError::MathUnderflow)?;
+
         if input_is_mint_a {
-            self.liquidity_pool.add_liquidity_a(input_amount)?;
-            self.liquidity_pool.remove_liquidity_b(output_amount)
+            self.liquidity_pool.add_liquidity_a(pool_input)?;
+            self.liquidity_pool.remove_liquidity_b(output_amount)?;
+            self.liquidity_pool
+                .accumulate_protocol_fee_a(protocol_fee_amount)
         } else {
-            self.liquidity_pool.add_liquidity_b(input_amount)?;
-            self.liquidity_pool.remove_liquidity_a(output_amount)
+            self.liquidity_pool.add_liquidity_b(pool_input)?;
+            self.liquidity_pool.remove_liquidity_a(output_amount)?;
+            self.liquidity_pool
+                .accumulate_protocol_fee_b(protocol_fee_amount)
         }
     }
 }
