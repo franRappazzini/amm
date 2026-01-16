@@ -12,11 +12,11 @@ const program = anchor.workspace.amm as anchor.Program<Amm>;
 const getGlobalConfigAccount = async () => {
   const [globalConfigPda] = PublicKey.findProgramAddressSync(
     [GLOBAL_CONFIG_SEED],
-    anchor.workspace.amm.programId
+    anchor.workspace.amm.programId,
   );
 
   return [
-    globalConfigParser(await program.account.globalConfig.fetch(globalConfigPda)),
+    globalConfigParser(await program.account.globalConfig.fetchNullable(globalConfigPda)),
     globalConfigPda,
   ] as const;
 };
@@ -24,7 +24,7 @@ const getGlobalConfigAccount = async () => {
 const getLiquidityPoolAccount = async (id: number) => {
   const [liquidityPoolPda] = PublicKey.findProgramAddressSync(
     [LIQUIDITY_POOL_SEED, bn(id).toArrayLike(Buffer, "le", 8)],
-    anchor.workspace.amm.programId
+    anchor.workspace.amm.programId,
   );
 
   return [

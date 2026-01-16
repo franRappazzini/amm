@@ -31,17 +31,17 @@ export function calculateDepositExcess(
   reserveA: number,
   reserveB: number
 ): { newAmountA: number; newAmountB: number } {
-  const deposited = Math.floor(amountB / amountA);
-  const reserves = Math.floor(reserveB / reserveA);
+  const depositedCross = amountB * reserveA;
+  const reservesCross = reserveB * amountA;
 
   let newAmountA = amountA;
   let newAmountB = amountB;
 
-  if (deposited > reserves) {
+  if (depositedCross > reservesCross) {
     const res = Math.floor((reserveB * amountA) / reserveA);
     const excessB = amountB - res;
     newAmountB = amountB - excessB;
-  } else if (deposited < reserves) {
+  } else if (depositedCross < reservesCross) {
     const res = Math.floor((reserveA * amountB) / reserveB);
     const excessA = amountA - res;
     newAmountA = amountA - excessA;

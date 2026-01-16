@@ -65,12 +65,18 @@ pub struct Swap<'info> {
 }
 
 impl<'info> Swap<'info> {
-    pub fn swap(&mut self, pool_id: u64, params: SwapParams) -> Result<()> {
+    pub fn swap(&mut self, pool_id: u64, params: SwapParams, slippage_limit: u64) -> Result<()> {
         // calculate and transfer input mint from signer to vault
         let input_is_mint_a = self.liquidity_pool.mint_a == self.input_mint.key();
 
         let (input_amount, output_amount, protocol_fee_amount) =
             self.calculate_amounts(&params, input_is_mint_a)?;
+
+        if params.is_exact_in() {
+            require!(output_amount >= slippage_limit, AmmError::SlippageExceeded);
+        } else if slippage_limit > 0 {
+            require!(input_amount <= slippage_limit, AmmError::SlippageExceeded);
+        }
 
         msg!(
             "Swapping {} of input mint for {} of output mint",
@@ -171,4 +177,10 @@ impl<'info> Swap<'info> {
 pub enum SwapParams {
     ExactIn { input_amount: u64 },
     ExactOut { output_amount: u64 },
+}
+
+impl SwapParams {
+    pub fn is_exact_in(&self) -> bool {
+        matches!(self, SwapParams::ExactIn { .. })
+    }
 }

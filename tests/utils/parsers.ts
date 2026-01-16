@@ -9,7 +9,10 @@ interface ParsedGlobalConfig {
   feeBps: number;
 }
 
-const globalConfigParser = (data: anchor.IdlAccounts<Amm>["globalConfig"]): ParsedGlobalConfig => {
+const globalConfigParser = (
+  data: anchor.IdlAccounts<Amm>["globalConfig"] | null,
+): ParsedGlobalConfig | null => {
+  if (data === null) return null;
   return {
     ...data,
     authority: data.authority.toBase58(),
@@ -33,7 +36,7 @@ interface ParsedLiquidityPool {
 }
 
 const liquidityPoolParser = (
-  data: anchor.IdlAccounts<Amm>["liquidityPool"]
+  data: anchor.IdlAccounts<Amm>["liquidityPool"],
 ): ParsedLiquidityPool => {
   return {
     ...data,

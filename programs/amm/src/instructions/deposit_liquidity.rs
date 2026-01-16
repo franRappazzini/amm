@@ -75,7 +75,13 @@ pub struct DepositLiquidity<'info> {
 }
 
 impl<'info> DepositLiquidity<'info> {
-    pub fn deposit_liquidity(&mut self, pool_id: u64, amount_a: u64, amount_b: u64) -> Result<()> {
+    pub fn deposit_liquidity(
+        &mut self,
+        pool_id: u64,
+        amount_a: u64,
+        amount_b: u64,
+        min_lp_out: u64,
+    ) -> Result<()> {
         require!(
             amount_a > 0 && amount_b > 0,
             AmmError::InsufficientInputAmount
@@ -130,6 +136,8 @@ impl<'info> DepositLiquidity<'info> {
             self.liquidity_pool.amount_mint_a,
             self.liquidity_pool.amount_mint_b,
         )?;
+
+        require!(liquidity >= min_lp_out, AmmError::SlippageExceeded);
 
         let signer_seeds: &[&[&[u8]]] = &[&[
             LIQUIDITY_POOL_SEED,

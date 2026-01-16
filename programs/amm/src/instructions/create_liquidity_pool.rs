@@ -32,8 +32,12 @@ pub struct CreateLiquidityPool<'info> {
     )]
     pub liquidity_pool: Account<'info, LiquidityPool>,
 
-    #[account(constraint = mint_a.key() != mint_b.key() @ AmmError::IdenticalMints)]
+    #[account(
+        constraint = mint_a.key() != mint_b.key() @ AmmError::IdenticalMints,
+        constraint = mint_a.decimals <= 12 @ AmmError::DecimalsTooLarge
+    )]
     pub mint_a: Box<InterfaceAccount<'info, Mint>>,
+    #[account(constraint = mint_b.decimals <= 12 @ AmmError::DecimalsTooLarge)]
     pub mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(

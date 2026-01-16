@@ -22,4 +22,10 @@ pub enum AmmError {
     ExcessiveOutputAmount,
     #[msg("Insufficient reserve in the liquidity pool")]
     InsufficientReserve,
+    #[msg("Token decimals exceed maximum allowed (12)")]
+    DecimalsTooLarge,
+    #[msg("Fee exceeds maximum allowed")]
+    FeeExceedsMaximum,
+    #[msg("Slippage tolerance exceeded")]
+    SlippageExceeded,
 }

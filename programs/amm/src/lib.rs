@@ -32,16 +32,17 @@ pub mod amm {
         pool_id: u64,
         amount_a: u64,
         amount_b: u64,
+        min_lp_out: u64,
     ) -> Result<()> {
-        ctx.accounts.deposit_liquidity(pool_id, amount_a, amount_b)
+        ctx.accounts.deposit_liquidity(pool_id, amount_a, amount_b, min_lp_out)
     }
 
     pub fn redeem_lp(ctx: Context<RedeemLp>, pool_id: u64, lp_amount: u64) -> Result<()> {
         ctx.accounts.redeem_lp(pool_id, lp_amount)
     }
 
-    pub fn swap(ctx: Context<Swap>, pool_id: u64, params: SwapParams) -> Result<()> {
-        ctx.accounts.swap(pool_id, params)
+    pub fn swap(ctx: Context<Swap>, pool_id: u64, params: SwapParams, slippage_limit: u64) -> Result<()> {
+        ctx.accounts.swap(pool_id, params, slippage_limit)
     }
 
     pub fn withdraw_protocol_fees(ctx: Context<WithdrawProtocolFees>, pool_id: u64) -> Result<()> {

@@ -186,15 +186,18 @@ pub fn calculate_deposit_excess(
     reserve_a: u64,
     reserve_b: u64,
 ) -> Result<(u64, u64)> {
-    let deposited = amount_b
-        .checked_div(amount_a)
-        .ok_or(AmmError::MathUnderflow)?;
+    // Cy / Cx ?= B / A
+    // cross = Cy * A  ?=  Cx * B
 
-    let reserves = reserve_b
-        .checked_div(reserve_a)
-        .ok_or(AmmError::MathUnderflow)?;
+    let deposited_cross = (amount_b as u128)
+        .checked_mul(reserve_a as u128)
+        .ok_or(AmmError::MathOverflow)?;
 
-    if deposited > reserves {
+    let reserves_cross = (reserve_b as u128)
+        .checked_mul(amount_a as u128)
+        .ok_or(AmmError::MathOverflow)?;
+
+    if deposited_cross > reserves_cross {
         // Δy = Cy - (B * Cx) / A
         let res = (reserve_b as u128)
             .checked_mul(amount_a as u128)
@@ -213,7 +216,7 @@ pub fn calculate_deposit_excess(
             .map_err(|_| AmmError::MathOverflow)?;
 
         Ok((amount_a, amount_b))
-    } else if deposited < reserves {
+    } else if deposited_cross < reserves_cross {
         // Δx = Cx - (A * Cy) / B
         let res = (reserve_a as u128)
             .checked_mul(amount_b as u128)

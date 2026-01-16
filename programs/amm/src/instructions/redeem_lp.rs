@@ -101,6 +101,8 @@ impl<'info> RedeemLp<'info> {
         ]];
 
         if claimable_amount_a > 0 {
+            self.liquidity_pool.remove_liquidity_a(claimable_amount_a)?;
+
             utils::token::transfer_spl(
                 &self.liquidity_pool.to_account_info(),
                 &self.mint_a_vault,
@@ -110,11 +112,11 @@ impl<'info> RedeemLp<'info> {
                 &self.token_program,
                 Some(signer_seeds),
             )?;
-
-            self.liquidity_pool.remove_liquidity_a(claimable_amount_a)?;
         }
 
         if claimable_amount_b > 0 {
+            self.liquidity_pool.remove_liquidity_b(claimable_amount_b)?;
+
             utils::token::transfer_spl(
                 &self.liquidity_pool.to_account_info(),
                 &self.mint_b_vault,
@@ -124,8 +126,6 @@ impl<'info> RedeemLp<'info> {
                 &self.token_program,
                 Some(signer_seeds),
             )?;
-
-            self.liquidity_pool.remove_liquidity_b(claimable_amount_b)?;
         }
 
         // update liquidity pool state

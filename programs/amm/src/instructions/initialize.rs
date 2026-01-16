@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{constants::GLOBAL_CONFIG_SEED, states::GlobalConfig};
+use crate::{constants::GLOBAL_CONFIG_SEED, errors::AmmError, states::GlobalConfig};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -21,6 +21,12 @@ pub struct Initialize<'info> {
 
 impl<'info> Initialize<'info> {
     pub fn initialize(&mut self, protocol_fee_bps: u16, fee_bps: u16, bump: u8) -> Result<()> {
+        let total_fee_bps = protocol_fee_bps
+            .checked_add(fee_bps)
+            .ok_or(AmmError::MathOverflow)?;
+
+        require!(total_fee_bps <= 10_000, AmmError::FeeExceedsMaximum);
+
         self.global_config.set_inner(GlobalConfig {
             authority: self.authority.key(),
             bump,
