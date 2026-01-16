@@ -1,6 +1,6 @@
 # AMM - Automated Market Maker on Solana
 
-An Automated Market Maker (AMM) protocol implemented on Solana using the Anchor framework. This project implements a liquidity pool system with token swapping based on the constant product formula (x \* y = k).
+An Automated Market Maker (AMM) program implemented on Solana using the Anchor framework. This project implements a liquidity pool system with token swapping based on the constant product formula (x \* y = k).
 
 ## 🚀 Features
 
