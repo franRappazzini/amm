@@ -8,3 +8,4 @@ test-ledger
 
 MATH.md
 output.json
+.fuzz-artifacts/

@@ -1,0 +1,8 @@
+[fuzz.metrics]
+enabled = true
+dashboard = true
+
+[[fuzz.programs]]
+address = "92NnZLZ8TS5Ay1UwAnQmtbYWbAFcEWtZcn7MwVkLhhMZ"
+program = "../target/deploy/amm.so"
+ 
