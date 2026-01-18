@@ -15,6 +15,12 @@ An Automated Market Maker (AMM) program implemented on Solana using the Anchor f
 
 <img src="https://img.shields.io/github/actions/workflow/status/franRappazzini/amm/radar.yaml">
 
+## 📚 Documentation
+
+For a comprehensive and detailed explanation of the project including architecture, workflows, implementation details, and more, visit:
+
+**[Complete Project Documentation by DeepWiki](http://deepwiki.com/franRappazzini/amm)**
+
 ## 📋 Prerequisites
 
 Before starting, make sure you have installed:
@@ -24,6 +30,7 @@ Before starting, make sure you have installed:
 - [Anchor CLI](https://www.anchor-lang.com/docs/installation) (v0.32.1 or higher)
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [Yarn](https://yarnpkg.com/getting-started/install) (package manager)
+- [Trident](https://ackee.xyz/trident/docs/latest/) (for fuzz testing) - Optional
 
 ### Verify installations
 
@@ -33,6 +40,18 @@ solana --version
 anchor --version
 node --version
 yarn --version
+```
+
+### Install Trident (Optional - for fuzz testing)
+
+```bash
+cargo install trident-cli
+```
+
+Verify Trident installation:
+
+```bash
+trident --version
 ```
 
 ## 🔧 Installation
@@ -113,6 +132,68 @@ yarn ts-mocha -p ./tsconfig.json -t 1000000 tests/amm-decimals-local.test.ts
 yarn ts-mocha -p ./tsconfig.json -t 1000000 tests/amm-slippage-local.test.ts
 ```
 
+## 🎯 Fuzz Testing with Trident
+
+This project includes fuzz tests built with [Trident](https://ackee.xyz/trident/docs/latest/), a powerful fuzzing framework for Solana programs. Fuzz testing helps discover edge cases and vulnerabilities by automatically generating random inputs.
+
+### Prerequisites for Fuzz Testing
+
+- Trident CLI installed (see installation instructions above)
+- Honggfuzz dependencies (installed automatically by Trident)
+
+### Running Fuzz Tests
+
+1. **Navigate to the trident-tests directory:**
+
+```bash
+cd trident-tests
+```
+
+2. **Build the fuzz tests:**
+
+```bash
+trident fuzz build fuzz_0
+```
+
+3. **Run the fuzz tests:**
+
+```bash
+# Run with default settings
+trident fuzz run fuzz_0
+
+# Run with specific number of iterations
+trident fuzz run fuzz_0 -- --iterations 10000
+
+# Run with time limit (in seconds)
+trident fuzz run fuzz_0 -- --timeout 300
+```
+
+4. **View fuzz test metrics (if enabled):**
+
+The fuzz tests include metrics and dashboard functionality. After running tests, metrics will be displayed in the terminal.
+
+### Fuzz Test Structure
+
+```
+trident-tests/
+├── Cargo.toml           # Fuzz test dependencies
+├── Trident.toml         # Trident configuration
+└── fuzz_0/              # Fuzz test suite
+    ├── test_fuzz.rs     # Main fuzz test logic
+    ├── fuzz_accounts.rs # Account configurations
+    └── types.rs         # Type definitions
+```
+
+### What the Fuzz Tests Cover
+
+The fuzz tests automatically test various scenarios including:
+
+- Protocol initialization with random fee parameters
+- Liquidity pool creation with random token amounts
+- Deposits and withdrawals with varying amounts
+- Token swaps with different slippage parameters
+- Edge cases and boundary conditions
+
 ## 📁 Project Structure
 
 ```
@@ -131,6 +212,13 @@ amm/
 │   ├── amm-decimals-local.test.ts # Decimals tests
 │   ├── amm-slippage-local.test.ts # Slippage tests
 │   └── utils/                      # Testing utilities
+├── trident-tests/
+│   ├── Trident.toml               # Trident configuration
+│   ├── Cargo.toml                 # Fuzz test dependencies
+│   └── fuzz_0/                    # Fuzz test suite
+│       ├── test_fuzz.rs           # Main fuzz test logic
+│       ├── fuzz_accounts.rs       # Account configurations
+│       └── types.rs               # Type definitions
 ├── target/
 │   └── idl/
 │       └── amm.json               # Generated IDL
@@ -230,10 +318,6 @@ anchor build
 # Verify the program is deployed
 solana program show 92NnZLZ8TS5Ay1UwAnQmtbYWbAFcEWtZcn7MwVkLhhMZ
 ```
-
-## 📄 License
-
-ISC
 
 ## 🤝 Contributing
 
