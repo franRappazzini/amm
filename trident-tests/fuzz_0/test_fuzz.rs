@@ -412,15 +412,21 @@ impl FuzzTest {
             .account
             .amount;
 
+        let min = liquidity_pool_account.amount_mint_a.min(balance_mint_a);
+
+        let input_amount = if min <= 0 {
+            min
+        } else {
+            self.trident.random_from_range(1..min)
+        };
+
         let pool_id = global_config_account.pool_count - 1;
         let params = SwapParams::ExactIn {
-            input_amount: self
-                .trident
-                .random_from_range(1..liquidity_pool_account.amount_mint_a.min(balance_mint_a)),
+            input_amount,
+            min_output_amount: 0,
         };
-        let slippage_limit = 0; // expressed in amount, not bps
 
-        let ix = SwapInstruction::data(SwapInstructionData::new(pool_id, params, slippage_limit))
+        let ix = SwapInstruction::data(SwapInstructionData::new(pool_id, params))
             .accounts(SwapInstructionAccounts::new(
                 signer,
                 liquidity_pool,
@@ -453,7 +459,7 @@ impl FuzzTest {
             .fuzz_accounts
             .liquidity_pool
             .get(&mut self.trident)
-            .expect("account not found") ;
+            .expect("account not found");
         let liquidity_pool_account = self
             .trident
             .get_account_with_type::<LiquidityPool>(&liquidity_pool, 8)
@@ -535,6 +541,7 @@ impl FuzzTest {
         let random_input_amount = self
             .trident
             .random_from_range(1..(liquidity_pool_account.amount_mint_a.min(balance_mint_a)));
+
         let max_output_amount = calculate_output_amount(
             random_input_amount,
             liquidity_pool_account.amount_mint_a,
@@ -542,12 +549,18 @@ impl FuzzTest {
             liquidity_pool_account.fee_bps,
         );
 
-        let params = SwapParams::ExactOut {
-            output_amount: self.trident.random_from_range(1..max_output_amount),
+        let output_amount = if max_output_amount <= 1 {
+            max_output_amount
+        } else {
+            self.trident.random_from_range(1..max_output_amount)
         };
-        let slippage_limit = 0; // expressed in amount, not bps
 
-        let ix = SwapInstruction::data(SwapInstructionData::new(pool_id, params, slippage_limit))
+        let params = SwapParams::ExactOut {
+            output_amount,
+            max_input_amount: balance_mint_a,
+        };
+
+        let ix = SwapInstruction::data(SwapInstructionData::new(pool_id, params))
             .accounts(SwapInstructionAccounts::new(
                 signer,
                 liquidity_pool,
