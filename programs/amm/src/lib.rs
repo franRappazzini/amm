@@ -7,7 +7,7 @@ mod utils;
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("92NnZLZ8TS5Ay1UwAnQmtbYWbAFcEWtZcn7MwVkLhhMZ");
+declare_id!("amm58rutPHRg7dSBYyKdWiCzwSJ7ehhDYAbHnzWt3sD");
 
 #[program]
 pub mod amm {

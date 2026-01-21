@@ -15,6 +15,14 @@ An Automated Market Maker (AMM) program implemented on Solana using the Anchor f
 
 <img src="https://img.shields.io/github/actions/workflow/status/franRappazzini/amm/radar.yaml">
 
+## 🌐 Devnet Deployment
+
+The AMM program is deployed on Solana Devnet and can be used without any issues:
+
+**Program ID**: `amm58rutPHRg7dSBYyKdWiCzwSJ7ehhDYAbHnzWt3sD`
+
+You can interact with this program directly on devnet without needing to deploy it locally.
+
 ## 📚 Documentation
 
 For a comprehensive and detailed explanation of the project including architecture, workflows, implementation details, and more, visit:
