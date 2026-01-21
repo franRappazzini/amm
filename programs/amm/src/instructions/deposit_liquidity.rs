@@ -137,7 +137,10 @@ impl<'info> DepositLiquidity<'info> {
             self.liquidity_pool.amount_mint_b,
         )?;
 
-        require!(liquidity >= min_lp_out, AmmError::SlippageExceeded);
+        require!(
+            liquidity >= min_lp_out,
+            AmmError::InsufficientLiquidityMinted
+        );
 
         let signer_seeds: &[&[&[u8]]] = &[&[
             LIQUIDITY_POOL_SEED,

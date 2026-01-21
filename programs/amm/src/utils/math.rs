@@ -314,7 +314,10 @@ pub fn calculate_swap_amounts(
         .ok_or(AmmError::MathUnderflow)?;
 
     match swap_params {
-        SwapParams::ExactIn { input_amount } => {
+        SwapParams::ExactIn {
+            input_amount,
+            min_output_amount,
+        } => {
             require!(*input_amount > 0, AmmError::InsufficientInputAmount);
             require!(
                 *input_amount < reserve_input,
@@ -345,6 +348,12 @@ pub fn calculate_swap_amounts(
                 .try_into()
                 .map_err(|_| AmmError::MathOverflow)?;
 
+            // slippage check
+            require!(
+                output_amount >= *min_output_amount,
+                AmmError::InsufficientOutputAmount
+            );
+
             // Calcular el fee del protocolo del input_amount
             let protocol_fee_amount = (*input_amount as u128)
                 .checked_mul(protocol_fee_bps as u128)
@@ -356,7 +365,10 @@ pub fn calculate_swap_amounts(
 
             Ok((*input_amount, output_amount, protocol_fee_amount))
         }
-        SwapParams::ExactOut { output_amount } => {
+        SwapParams::ExactOut {
+            output_amount,
+            max_input_amount,
+        } => {
             require!(*output_amount > 0, AmmError::InsufficientOutputAmount);
             require!(
                 *output_amount < reserve_output,
@@ -382,6 +394,14 @@ pub fn calculate_swap_amounts(
                 .ok_or(AmmError::MathUnderflow)?
                 .try_into()
                 .map_err(|_| AmmError::MathOverflow)?;
+
+            // slippage check
+            if *max_input_amount > 0 {
+                require!(
+                    input_amount <= *max_input_amount,
+                    AmmError::ExcessiveInputAmount
+                );
+            }
 
             // Calcular el fee del protocolo del input_amount
             let protocol_fee_amount = (input_amount as u128)

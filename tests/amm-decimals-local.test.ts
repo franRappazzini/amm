@@ -445,9 +445,14 @@ describe("amm - decimals tests", () => {
       const [poolBefore] = await getLiquidityPoolAccount(poolId);
 
       const inputAmount = 10_000_000; // 10 USDC
+      const minOutputAmount = 0;
+
+      const param: anchor.IdlTypes<Amm>["swapParams"] = {
+        exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(minOutputAmount) },
+      };
 
       const tx = await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(inputAmount) } }, bn(0))
+        .swap(bn(poolId), param)
         .accounts({
           tokenProgram: TOKEN_PROGRAM_ID,
           signer: liquidityProvider.publicKey,
@@ -469,9 +474,14 @@ describe("amm - decimals tests", () => {
       const [poolBefore] = await getLiquidityPoolAccount(poolId);
 
       const inputAmount = 100_000_000; // 0.1 SOL
+      const minOutputAmount = 0;
+
+      const param: anchor.IdlTypes<Amm>["swapParams"] = {
+        exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(minOutputAmount) },
+      };
 
       const tx = await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(inputAmount) } }, bn(0))
+        .swap(bn(poolId), param)
         .accounts({
           tokenProgram: TOKEN_PROGRAM_ID,
           signer: liquidityProvider.publicKey,

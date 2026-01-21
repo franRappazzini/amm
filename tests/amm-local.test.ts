@@ -349,10 +349,10 @@ describe("amm", () => {
 
   it("`swap` method using 'exact in' param with mint A!", async () => {
     const INPUT_AMOUNT = 10_000_000; // 10 token
-    const SLIPPAGE_LIMIT = 0; // expressed in amount, no bps
+    const MIN_OUTPUT_AMOUNT = 0;
 
     const param: anchor.IdlTypes<Amm>["swapParams"] = {
-      exactIn: { inputAmount: bn(INPUT_AMOUNT) },
+      exactIn: { inputAmount: bn(INPUT_AMOUNT), minOutputAmount: bn(MIN_OUTPUT_AMOUNT) },
     };
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
@@ -360,7 +360,7 @@ describe("amm", () => {
     console.log("B amount in vault:", prevLiquidityPool.amountMintB);
 
     const tx = await program.methods
-      .swap(bn(poolId), param, bn(SLIPPAGE_LIMIT))
+      .swap(bn(poolId), param)
       .accounts({
         signer: user.publicKey,
         inputMint: mintA,
@@ -397,10 +397,10 @@ describe("amm", () => {
 
   it("`swap` method using 'exact out' param with mint A!", async () => {
     const OUTPUT_AMOUNT = 20_000_000; // 2 token
-    const SLIPPAGE_LIMIT = 0; // expressed in amount, no bps
+    const MAX_INPUT_AMOUNT = 0;
 
     const param: anchor.IdlTypes<Amm>["swapParams"] = {
-      exactOut: { outputAmount: bn(OUTPUT_AMOUNT) },
+      exactOut: { outputAmount: bn(OUTPUT_AMOUNT), maxInputAmount: bn(MAX_INPUT_AMOUNT) },
     };
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
@@ -408,7 +408,7 @@ describe("amm", () => {
     console.log("B amount in vault:", prevLiquidityPool.amountMintB);
 
     const tx = await program.methods
-      .swap(bn(poolId), param, bn(SLIPPAGE_LIMIT))
+      .swap(bn(poolId), param)
       .accounts({
         signer: user.publicKey,
         inputMint: mintA,
@@ -445,10 +445,10 @@ describe("amm", () => {
 
   it("`swap` method using 'exact in' param with mint B!", async () => {
     const INPUT_AMOUNT = 10_000_000; // 10 token
-    const SLIPPAGE_LIMIT = 0; // expressed in amount, no bps
+    const MIN_OUTPUT_AMOUNT = 0;
 
     const param: anchor.IdlTypes<Amm>["swapParams"] = {
-      exactIn: { inputAmount: bn(INPUT_AMOUNT) },
+      exactIn: { inputAmount: bn(INPUT_AMOUNT), minOutputAmount: bn(MIN_OUTPUT_AMOUNT) },
     };
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
@@ -456,7 +456,7 @@ describe("amm", () => {
     console.log("B amount in vault:", prevLiquidityPool.amountMintB);
 
     const tx = await program.methods
-      .swap(bn(poolId), param, bn(SLIPPAGE_LIMIT))
+      .swap(bn(poolId), param)
       .accounts({
         signer: user.publicKey,
         inputMint: mintB,
@@ -493,10 +493,10 @@ describe("amm", () => {
 
   it("`swap` method using 'exact out' param with mint B!", async () => {
     const OUTPUT_AMOUNT = 2_000_000; // 2 token
-    const SLIPPAGE_LIMIT = 0; // expressed in amount, no bps
+    const MAX_INPUT_AMOUNT = 0;
 
     const param: anchor.IdlTypes<Amm>["swapParams"] = {
-      exactOut: { outputAmount: bn(OUTPUT_AMOUNT) },
+      exactOut: { outputAmount: bn(OUTPUT_AMOUNT), maxInputAmount: bn(MAX_INPUT_AMOUNT) },
     };
 
     const [prevLiquidityPool] = await getLiquidityPoolAccount(poolId);
@@ -504,7 +504,7 @@ describe("amm", () => {
     console.log("B amount in vault:", prevLiquidityPool.amountMintB);
 
     const tx = await program.methods
-      .swap(bn(poolId), param, bn(SLIPPAGE_LIMIT))
+      .swap(bn(poolId), param)
       .accounts({
         signer: user.publicKey,
         inputMint: mintB,

@@ -251,7 +251,7 @@ describe("amm - slippage protection tests", () => {
       const inputAmount = 10_000_000; // 10 tokens
 
       const { outputAmount } = calculateSwapAmounts(
-        { exactIn: { inputAmount: bn(inputAmount) } },
+        { exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(0) } },
         pool.amountMintA,
         pool.amountMintB,
         feeBps,
@@ -262,7 +262,9 @@ describe("amm - slippage protection tests", () => {
       const minAmountOut = Math.floor(outputAmount * 0.95);
 
       const tx = await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(inputAmount) } }, bn(minAmountOut))
+        .swap(bn(poolId), {
+          exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(minAmountOut) },
+        })
         .accounts({
           signer: trader.publicKey,
           inputMint: mintA,
@@ -281,7 +283,7 @@ describe("amm - slippage protection tests", () => {
       const inputAmount = 10_000_000; // 10 tokens
 
       const { outputAmount } = calculateSwapAmounts(
-        { exactIn: { inputAmount: bn(inputAmount) } },
+        { exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(0) } },
         pool.amountMintA,
         pool.amountMintB,
         feeBps,
@@ -293,7 +295,9 @@ describe("amm - slippage protection tests", () => {
 
       try {
         await program.methods
-          .swap(bn(poolId), { exactIn: { inputAmount: bn(inputAmount) } }, bn(minAmountOut))
+          .swap(bn(poolId), {
+            exactIn: { inputAmount: bn(inputAmount), minOutputAmount: bn(minAmountOut) },
+          })
           .accounts({
             signer: trader.publicKey,
             inputMint: mintA,
@@ -315,7 +319,7 @@ describe("amm - slippage protection tests", () => {
       const victimInputAmount = 50_000_000; // 50 tokens
 
       const { outputAmount: expectedOutput } = calculateSwapAmounts(
-        { exactIn: { inputAmount: bn(victimInputAmount) } },
+        { exactIn: { inputAmount: bn(victimInputAmount), minOutputAmount: bn(0) } },
         poolBefore.amountMintA,
         poolBefore.amountMintB,
         feeBps,
@@ -324,7 +328,7 @@ describe("amm - slippage protection tests", () => {
 
       // Attacker front-runs with large swap
       await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(100_000_000) } }, bn(0))
+        .swap(bn(poolId), { exactIn: { inputAmount: bn(100_000_000), minOutputAmount: bn(0) } })
         .accounts({
           signer: liquidityProvider.publicKey,
           inputMint: mintA,
@@ -339,7 +343,9 @@ describe("amm - slippage protection tests", () => {
 
       try {
         await program.methods
-          .swap(bn(poolId), { exactIn: { inputAmount: bn(victimInputAmount) } }, bn(minAmountOut))
+          .swap(bn(poolId), {
+            exactIn: { inputAmount: bn(victimInputAmount), minOutputAmount: bn(minAmountOut) },
+          })
           .accounts({
             signer: trader.publicKey,
             inputMint: mintA,
@@ -363,7 +369,7 @@ describe("amm - slippage protection tests", () => {
       const outputAmount = 5_000_000; // 5 tokens
 
       const { inputAmount } = calculateSwapAmounts(
-        { exactOut: { outputAmount: bn(outputAmount) } },
+        { exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(0) } },
         pool.amountMintA,
         pool.amountMintB,
         feeBps,
@@ -374,7 +380,9 @@ describe("amm - slippage protection tests", () => {
       const maxAmountIn = Math.floor(inputAmount * 1.05);
 
       const tx = await program.methods
-        .swap(bn(poolId), { exactOut: { outputAmount: bn(outputAmount) } }, bn(maxAmountIn))
+        .swap(bn(poolId), {
+          exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(maxAmountIn) },
+        })
         .accounts({
           signer: trader.publicKey,
           inputMint: mintA,
@@ -393,7 +401,7 @@ describe("amm - slippage protection tests", () => {
       const outputAmount = 5_000_000; // 5 tokens
 
       const { inputAmount } = calculateSwapAmounts(
-        { exactOut: { outputAmount: bn(outputAmount) } },
+        { exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(0) } },
         pool.amountMintA,
         pool.amountMintB,
         feeBps,
@@ -405,7 +413,9 @@ describe("amm - slippage protection tests", () => {
 
       try {
         await program.methods
-          .swap(bn(poolId), { exactOut: { outputAmount: bn(outputAmount) } }, bn(maxAmountIn))
+          .swap(bn(poolId), {
+            exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(maxAmountIn) },
+          })
           .accounts({
             signer: trader.publicKey,
             inputMint: mintA,
@@ -427,7 +437,7 @@ describe("amm - slippage protection tests", () => {
       const outputAmount = 10_000_000; // 10 tokens
 
       const { inputAmount: expectedInput } = calculateSwapAmounts(
-        { exactOut: { outputAmount: bn(outputAmount) } },
+        { exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(0) } },
         poolBefore.amountMintA,
         poolBefore.amountMintB,
         feeBps,
@@ -436,7 +446,7 @@ describe("amm - slippage protection tests", () => {
 
       // Attacker front-runs
       await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(50_000_000) } }, bn(0))
+        .swap(bn(poolId), { exactIn: { inputAmount: bn(50_000_000), minOutputAmount: bn(0) } })
         .accounts({
           signer: liquidityProvider.publicKey,
           inputMint: mintA,
@@ -451,7 +461,9 @@ describe("amm - slippage protection tests", () => {
 
       try {
         await program.methods
-          .swap(bn(poolId), { exactOut: { outputAmount: bn(outputAmount) } }, bn(maxAmountIn))
+          .swap(bn(poolId), {
+            exactOut: { outputAmount: bn(outputAmount), maxInputAmount: bn(maxAmountIn) },
+          })
           .accounts({
             signer: trader.publicKey,
             inputMint: mintA,
@@ -484,7 +496,7 @@ describe("amm - slippage protection tests", () => {
 
     it("Should allow slippage_limit of 0 in ExactIn (no protection)", async () => {
       const tx = await program.methods
-        .swap(bn(poolId), { exactIn: { inputAmount: bn(1_000_000) } }, bn(0))
+        .swap(bn(poolId), { exactIn: { inputAmount: bn(1_000_000), minOutputAmount: bn(0) } })
         .accounts({
           signer: trader.publicKey,
           inputMint: mintA,
@@ -499,11 +511,9 @@ describe("amm - slippage protection tests", () => {
 
     it("Should allow very high slippage_limit in ExactOut (no effective protection)", async () => {
       const tx = await program.methods
-        .swap(
-          bn(poolId),
-          { exactOut: { outputAmount: bn(1_000_000) } },
-          bn(1_000_000_000_000), // Very high limit
-        )
+        .swap(bn(poolId), {
+          exactOut: { outputAmount: bn(1_000_000), maxInputAmount: bn(1_000_000_000_000) }, // Very high limit
+        })
         .accounts({
           signer: trader.publicKey,
           inputMint: mintA,

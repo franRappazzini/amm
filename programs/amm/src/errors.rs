@@ -26,6 +26,4 @@ pub enum AmmError {
     DecimalsTooLarge,
     #[msg("Fee exceeds maximum allowed")]
     FeeExceedsMaximum,
-    #[msg("Slippage tolerance exceeded")]
-    SlippageExceeded,
 }

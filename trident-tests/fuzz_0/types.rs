@@ -955,19 +955,11 @@ pub mod amm {
         pub pool_id: u64,
 
         pub params: SwapParams,
-
-        pub slippage_limit: u64,
     }
 
     impl SwapInstructionData {
-        pub fn new(pool_id: u64, params: SwapParams, slippage_limit: u64) -> Self {
-            Self {
-                pool_id,
-
-                params,
-
-                slippage_limit,
-            }
+        pub fn new(pool_id: u64, params: SwapParams) -> Self {
+            Self { pool_id, params }
         }
     }
 
@@ -1408,9 +1400,17 @@ impl LiquidityPool {
 /// Custom enum: SwapParams
 #[derive(Debug, BorshDeserialize, BorshSerialize, Clone)]
 pub enum SwapParams {
-    ExactIn { input_amount: u64 },
+    ExactIn {
+        input_amount: u64,
 
-    ExactOut { output_amount: u64 },
+        min_output_amount: u64,
+    },
+
+    ExactOut {
+        output_amount: u64,
+
+        max_input_amount: u64,
+    },
 }
 
 // ============================================================================
