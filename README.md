@@ -2,6 +2,8 @@
 
 An Automated Market Maker (AMM) program implemented on Solana using the Anchor framework. This project implements a liquidity pool system with token swapping based on the constant product formula (x \* y = k).
 
+**AMM client repo**: https://github.com/franRappazzini/amm-client
+
 ## 🚀 Features
 
 - **Protocol Initialization**: Configuration of protocol and swap fees
